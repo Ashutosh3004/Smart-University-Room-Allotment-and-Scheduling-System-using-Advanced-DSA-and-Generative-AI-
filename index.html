@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Smart University Room Allotment System Prototype</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="card" style="margin-bottom:16px;">
+  <div class="flex-between">
+    <div>
+      <h1>Smart Allotment System — Prototype</h1>
+      <div class="small">Advanced DSA, Constraints & Smart Allotment Demo</div>
+    </div>
+    <div class="small muted">Prioritization: Admin (100) → Faculty (80) → Warden (70) → Student (50)</div>
+  </div>
+</header>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <h3 class="section-title">Create Room</h3>
+      <label>Room name</label>
+      <input id="roomName" placeholder="e.g., Seminar Hall A"/>
+      <label>Type</label>
+      <select id="roomType">
+        <option value="classroom">Classroom</option>
+        <option value="lab">Laboratory</option>
+        <option value="seminar">Seminar Hall</option>
+        <option value="hostel">Hostel Room</option>
+      </select>
+      <label>Capacity (people)</label>
+      <input id="roomCap" type="number" min="1" value="30"/>
+      <label>Resource tags (comma separated)</label>
+      <input id="roomTags" placeholder="e.g., computers,projector,ac"/>
+      <label>Gender (hostel only)</label>
+      <select id="roomGender">
+        <option value="any">Any</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+      <div class="controls">
+        <button id="addRoomBtn">Add Room</button>
+        <button id="seedRoomsBtn" style="background:#2c2c2c">Seed Example Rooms</button>
+      </div>
+      <div class="list" id="roomsList"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3 class="section-title">Create Booking Request</h3>
+      <label>User type</label>
+      <select id="userType">
+        <option value="admin">Admin</option>
+        <option value="faculty">Faculty</option>
+        <option value="warden">Hostel Warden</option>
+        <option value="student">Student</option>
+      </select>
+      <label>User name</label>
+      <input id="userName" placeholder="Name"/>
+      <label>Expected attendees</label>
+      <input id="attendees" type="number" min="1" value="20"/>
+      <label>Purpose / Resource need</label>
+      <input id="resourceNeed" placeholder="e.g., computers,projector"/>
+      <label>Room type preference</label>
+      <select id="prefRoomType">
+        <option value="">Any</option>
+        <option value="classroom">Classroom</option>
+        <option value="lab">Laboratory</option>
+        <option value="seminar">Seminar Hall</option>
+        <option value="hostel">Hostel</option>
+      </select>
+
+      <label>Date</label>
+      <input id="date" type="date"/>
+      <label>Start time (24h)</label>
+      <input id="startTime" type="time"/>
+      <label>End time (24h)</label>
+      <input id="endTime" type="time"/>
+      <label>Gender (for hostel bookings)</label>
+      <select id="reqGender">
+        <option value="any">Any</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+
+      <div class="controls">
+        <button id="addReqBtn">Add Request</button>
+        <button id="seedReqBtn" style="background:#2c2c2c">Seed Example Requests</button>
+      </div>
+
+      <div class="list" id="reqList"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3 class="section-title">Booking Constraints / Settings</h3>
+      <div class="small muted">Adjust system-wide constraints that affect smart allotment</div>
+      <label>Minimum gap between bookings (minutes)</label>
+      <input id="minGap" type="number" value="0" min="0"/>
+      <label>Allow over-capacity? (if checked, tries to assign even if capacity is less)</label>
+      <select id="allowOverCap"><option value="false">No</option><option value="true">Yes</option></select>
+      <div class="small" style="margin-top:10px;">Priority weights (higher = earlier allocation)</div>
+      <label>Admin weight</label><input id="wAdmin" type="number" value="100"/>
+      <label>Faculty weight</label><input id="wFac" type="number" value="80"/>
+      <label>Warden weight</label><input id="wWarden" type="number" value="70"/>
+      <label>Student weight</label><input id="wStudent" type="number" value="50"/>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+        <h3 class="section-title">Room Utilization Statistics (Smart Metrics)</h3>
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-box">
+                <div class="value" id="statRoomCount">0</div>
+                <div class="label">Total Rooms</div>
+            </div>
+            <div class="stat-box" style="border-left-color: #2ea86b;">
+                <div class="value" id="statAssignedPercent">0%</div>
+                <div class="label">Booking Success Rate</div>
+            </div>
+            <div class="stat-box" style="border-left-color: #f3a712;">
+                <div class="value" id="statClashTime">0h</div>
+                <div class="label">Total Requested Time</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="flex-between">
+        <h3 class="section-title">Smart Allotment Engine</h3>
+        <div class="small muted">Click to allocate pending requests</div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="runAllot">Run Smart Allotment</button>
+        <button id="clearAssigned" style="background:#c63">Clear All Assignments</button>
+      </div>
+
+      <div id="allotResult"></div>
+
+      <h4 style="margin-top:12px;">Assigned Bookings</h4>
+      <div id="assignedTable"></div>
+
+      <h4 style="margin-top:12px;">Unassigned Requests</h4>
+      <div id="unassignedTable"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3 class="section-title">Notes / How allocator works</h3>
+      <ul>
+        <li>Sorts requests by priority weight then by shorter duration first (to maximize usage).</li>
+        <li>Tries to find the smallest capacity room that fits attendees and matches resource tags + type preference.</li>
+        <li>Respects gender constraint for hostel rooms; will not assign male/female mismatch.</li>
+        <li>Detects time overlap and enforces minimum gap between bookings.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+/* -------------------------
+  Data models (in-memory)
+--------------------------*/
+let rooms = [];
+let requests = [];
+let assignments = []; // {reqId, roomId}
+
+/* Utility: generate ids */
+const id = (p='i')=>p+Math.random().toString(36).slice(2,9);
+
+/* Utility: parse time for comparison (Needed for local stats calculation) */
+function parseTime(dateStr, hhmm){
+  return new Date(dateStr + 'T' + hhmm + ':00').getTime();
+}
+
+/* -------------------------
+  Render Helpers & Statistics
+--------------------------*/
+function renderRooms(){
+  const el = document.getElementById('roomsList'); el.innerHTML='';
+  if(!rooms.length){ el.innerHTML='<div class="muted small">No rooms yet</div>'; return; }
+  let html = '<table><thead><tr><th>Name</th><th>Type / Cap</th><th>Tags / Gender</th><th></th></tr></thead><tbody>';
+  rooms.forEach(r=>{
+    html += `<tr>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.type} / ${r.capacity}</td>
+      <td>${(r.tags||[]).join(', ') || '<span class="muted">none</span>'} ${r.gender!=='any'? '/ '+r.gender : ''}</td>
+      <td><button onclick="delRoom('${r.id}')" style="background:#f44;padding:6px 8px;border-radius:6px;">Del</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+function renderRequests(){
+  const el = document.getElementById('reqList'); el.innerHTML='';
+  if(!requests.length){ el.innerHTML='<div class="muted small">No requests yet</div>'; return; }
+  let html = '<table><thead><tr><th>User</th><th>Type / Att</th><th>Time</th><th>Needs</th><th></th></tr></thead><tbody>';
+  requests.forEach(r=>{
+    // Using priority badge classes from CSS
+    const priorityColor = (r.userType === 'admin') ? 'p-admin' : (r.userType === 'faculty' ? 'p-fac' : (r.userType === 'warden' ? 'p-warden' : 'p-student'));
+
+    html += `<tr>
+      <td><div style="display:flex;flex-direction:column"><strong>${r.userName}</strong><span class="priority-badge ${priorityColor}">${r.userType}</span></div></td>
+      <td>${r.attendees} people</td>
+      <td>${r.date} ${r.start} → ${r.end}</td>
+      <td>${(r.need||'—')} ${r.prefType?('/ '+r.prefType):''} ${r.gender!=='any'?'/ '+r.gender:''}</td>
+      <td><button onclick="delReq('${r.id}')" style="background:#f44;padding:6px 8px;border-radius:6px;">Del</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+function renderAssigned(){
+  const el = document.getElementById('assignedTable'); el.innerHTML='';
+  if(!assignments.length){ el.innerHTML='<div class="muted small">No assignments yet</div>'; return; }
+
+  let rows = assignments.map(a=>{
+    const r = requests.find(x=>x.id===a.reqId);
+    const rm = rooms.find(x=>x.id===a.roomId);
+    if (!r || !rm) return '';
+
+    // Calculate constraints met for dynamic display
+    const roomFit = rm.capacity >= r.attendees ? 'ok' : 'warn';
+    const resourceMatch = (r.need||'').split(',').map(s=>s.trim()).filter(Boolean).every(nt => (rm.tags||[]).map(x=>x.toLowerCase()).includes(nt.toLowerCase()));
+    
+    const priorityColor = (r.userType === 'admin') ? 'p-admin' : (r.userType === 'faculty' ? 'p-fac' : (r.userType === 'warden' ? 'p-warden' : 'p-student'));
+
+    return `
+      <tr class="assigned-row">
+        <td><strong>${r.userName}</strong><br><span class="priority-badge ${priorityColor}">${r.userType}</span></td>
+        <td>${rm.name} (${rm.type})</td>
+        <td>${r.date} ${r.start} → ${r.end}</td>
+        <td>
+          <span class="${roomFit}">${r.attendees}/${rm.capacity} Ppl</span><br>
+          <span class="${resourceMatch ? 'ok' : 'danger'}">${resourceMatch ? 'Resources OK' : 'Tags Missing!'}</span>
+        </td>
+      </tr>`;
+  }).join('');
+
+  let html = '<table><thead><tr><th>User / Priority</th><th>Room Assigned</th><th>Time Slot</th><th>Constraints Met</th></tr></thead><tbody>';
+  html += rows;
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+function renderUnassigned(unassigned){
+  const el = document.getElementById('unassignedTable'); el.innerHTML='';
+  if(!unassigned || !unassigned.length){ el.innerHTML='<div class="muted small">No unassigned requests</div>'; return; }
+  let html = '<table><thead><tr><th>User</th><th>Time</th><th>Reason for Failure</th></tr></thead><tbody>';
+  unassigned.forEach(u=>{
+    html += `<tr>
+      <td><strong>${u.req.userName}</strong> (${u.req.userType})</td>
+      <td>${u.req.date} ${u.req.start}→${u.req.end}</td>
+      <td class="unassigned-reason">${u.reason}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function updateStats(){
+  const totalRooms = rooms.length;
+  const totalRequests = requests.length;
+  const assignedCount = assignments.length;
+  
+  // 1. Booking Success Rate
+  const successRate = totalRequests > 0 ? ((assignedCount / totalRequests) * 100).toFixed(1) : 0;
+  
+  // 2. Total Booking Time (simple sum of durations for all requests)
+  let totalDurationMs = 0;
+  requests.forEach(r => {
+      const startMs = parseTime(r.date, r.start);
+      const endMs = parseTime(r.date, r.end);
+      // Basic check to prevent negative time calculation errors
+      if (endMs > startMs) {
+          totalDurationMs += (endMs - startMs);
+      }
+  });
+  const totalHours = (totalDurationMs / (1000 * 60 * 60)).toFixed(1);
+
+  // Update the DOM elements
+  document.getElementById('statRoomCount').textContent = totalRooms.toString();
+  document.getElementById('statAssignedPercent').textContent = `${successRate}%`;
+  document.getElementById('statClashTime').textContent = `${totalHours}h`;
+}
+
+
+/* -------------------------
+  Add / Delete handlers (Local Data Management)
+--------------------------*/
+document.getElementById('addRoomBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('roomName').value.trim();
+  if(!name){alert('Enter room name'); return;}
+  rooms.push({
+    id:id('room'),
+    name,
+    type:document.getElementById('roomType').value,
+    capacity:parseInt(document.getElementById('roomCap').value)||1,
+    tags: document.getElementById('roomTags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    gender: document.getElementById('roomGender').value
+  });
+  document.getElementById('roomName').value=''; document.getElementById('roomTags').value='';
+  renderRooms();
+  updateStats();
+});
+
+document.getElementById('addReqBtn').addEventListener('click', ()=>{
+  const userType = document.getElementById('userType').value;
+  const userName = document.getElementById('userName').value.trim() || userType+'-'+Math.floor(Math.random()*90+10);
+  const attendees = parseInt(document.getElementById('attendees').value)||1;
+  const need = document.getElementById('resourceNeed').value.trim();
+  const prefType = document.getElementById('prefRoomType').value;
+  const date = document.getElementById('date').value;
+  const start = document.getElementById('startTime').value;
+  const end = document.getElementById('endTime').value;
+  const gender = document.getElementById('reqGender').value;
+  if(!date||!start||!end){ alert('Select date & times'); return; }
+  if(start>=end){ alert('Start must be before end'); return; }
+  requests.push({
+    id:id('req'),
+    userType, userName, attendees, need, prefType,
+    date, start, end, gender
+  });
+  renderRequests();
+  updateStats();
+});
+
+/* Delete helpers */
+function delRoom(rid){ rooms = rooms.filter(r=>r.id!==rid); renderRooms(); updateStats(); }
+function delReq(rid){ requests = requests.filter(r=>r.id!==rid); assignments = assignments.filter(a=>a.reqId!==rid); renderRequests(); renderAssigned(); updateStats(); }
+
+/* Seed sample data */
+document.getElementById('seedRoomsBtn').addEventListener('click', ()=>{
+  rooms = [
+    {id:id('room'), name:'Classroom 101', type:'classroom', capacity:40, tags:['projector'], gender:'any'},
+    {id:id('room'), name:'Computer Lab A', type:'lab', capacity:30, tags:['computers','projector'], gender:'any'},
+    {id:id('room'), name:'Seminar Hall', type:'seminar', capacity:120, tags:['microphone','projector'], gender:'any'},
+    {id:id('room'), name:'Hostel Single M1', type:'hostel', capacity:1, tags:[], gender:'male'},
+    {id:id('room'), name:'Hostel Double F2', type:'hostel', capacity:2, tags:[], gender:'female'},
+    {id:id('room'), name:'Small Tutorial Room', type:'classroom', capacity:12, tags:[], gender:'any'},
+  ];
+  renderRooms();
+  updateStats();
+});
+
+document.getElementById('seedReqBtn').addEventListener('click', ()=>{
+  requests = [
+    {id:id('req'), userType:'student', userName:'Alice', attendees:1, need:'', prefType:'hostel', date:'2025-08-15', start:'10:00', end:'11:00', gender:'female'},
+    {id:id('req'), userType:'faculty', userName:'Dr. Bose', attendees:40, need:'projector', prefType:'classroom', date:'2025-08-15', start:'10:00', end:'12:00', gender:'any'},
+    {id:id('req'), userType:'warden', userName:'Warden Kumar', attendees:2, need:'', prefType:'hostel', date:'2025-08-15', start:'09:00', end:'09:30', gender:'male'},
+    {id:id('req'), userType:'admin', userName:'Registrar', attendees:100, need:'microphone', prefType:'seminar', date:'2025-08-15', start:'11:00', end:'13:00', gender:'any'},
+    {id:id('req'), userType:'student', userName:'Ravi', attendees:25, need:'computers', prefType:'lab', date:'2025-08-15', start:'10:00', end:'11:30', gender:'male'}
+  ];
+  renderRequests();
+  updateStats();
+});
+
+/* Export to JSON */
+document.getElementById('exportJSON').addEventListener('click', ()=>{
+  const payload = {rooms, requests, assignments};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'booking_data.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* Clear assignments */
+document.getElementById('clearAssigned').addEventListener('click', ()=>{
+  assignments = []; document.getElementById('allotResult').innerHTML=''; renderAssigned(); renderUnassigned([]);
+});
+
+
+/* -------------------------
+  Smart Allotment Algorithm (API Integration - Fetches Python Backend)
+--------------------------*/
+
+const BACKEND_URL = 'http://localhost:5000/api/run-allotment'; 
+
+document.getElementById('runAllot').addEventListener('click', async ()=>{
+  // 1. Gather configuration and data for the backend
+  const minGap = parseInt(document.getElementById('minGap').value) || 0;
+  const allowOver = document.getElementById('allowOverCap').value === 'true';
+  const weights = {
+    admin: parseInt(document.getElementById('wAdmin').value)||100,
+    faculty: parseInt(document.getElementById('wFac').value)||80,
+    warden: parseInt(document.getElementById('wWarden').value)||70,
+    student: parseInt(document.getElementById('wStudent').value)||50
+  };
+
+  const payload = {
+      rooms: rooms,
+      requests: requests,
+      constraints: { minGap, allowOver, weights }
+  };
+
+  // 2. Prepare UI for loading state
+  const resultEl = document.getElementById('allotResult');
+  resultEl.innerHTML = `<div class="result-assigned" style="background:#fff3e0; color:#e07b39; border-left-color:#e07b39;">
+                           Running Smart Allotment Engine...
+                        </div>`;
+  assignments = [];
+  renderAssigned();
+  renderUnassigned([]);
+  updateStats();
+  
+  try {
+      // 3. Use fetch() to send the data to the backend API
+      const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+          throw new Error(`Backend API failed with status: ${response.status}`);
+      }
+
+      // 4. Parse the JSON response from the backend
+      const data = await response.json();
+      
+      // 5. Update frontend state and UI with the results
+      assignments = data.assignments || []; 
+      const unassignedFromBackend = data.unassigned || [];
+      
+      // Render outcomes
+      resultEl.innerHTML = `<div class="result-assigned"><strong>${assignments.length}</strong> assigned</div>
+                            <div class="result-unassigned"><strong>${unassignedFromBackend.length}</strong> unassigned</div>`;
+      
+      renderAssigned();
+      
+      // Map the backend unassigned results back to our full request objects for rendering
+      const unassignedToRender = unassignedFromBackend.map(u => ({
+          req: requests.find(r => r.id === u.reqId) || { userName: 'Unknown', userType: 'N/A', date: 'N/A', start: 'N/A', end: 'N/A' },
+          reason: u.reason || 'No reason provided by backend'
+      }));
+      renderUnassigned(unassignedToRender); 
+      updateStats();
+
+  } catch (error) {
+      console.error('API Error:', error);
+      document.getElementById('allotResult').innerHTML = 
+          `<div class="result-unassigned"><strong>Error:</strong> Could not connect to backend. Is the server running on port 5000? (${error.message})</div>`;
+  }
+});
+
+/* -------------------------
+  Backend Integration Functions (Existing Seat/Book routes from app.py)
+--------------------------*/
+// NOTE: These functions reference inputs/elements NOT in this HTML, 
+// so they are commented out for functional clarity.
+
+/* async function bookRoom() {
+  // ... (Removed irrelevant elements) ...
+}
+
+async function allocateSeat() {
+  // ... (Removed irrelevant elements) ...
+}
+
+async function showRoom() {
+  // ... (Removed irrelevant elements) ...
+}
+
+async function showAllRooms() {
+  // ... (Removed irrelevant elements) ...
+} */
+
+/* Initial render */
+document.addEventListener('DOMContentLoaded', () => {
+    renderRooms(); 
+    renderRequests(); 
+    renderAssigned(); 
+    renderUnassigned([]); 
+    updateStats(); 
+});
+
+/* For debugging: expose arrays to window */
+window._debug = {rooms, requests, assignments}; 
+
+</script>
+</body>
+</html>
