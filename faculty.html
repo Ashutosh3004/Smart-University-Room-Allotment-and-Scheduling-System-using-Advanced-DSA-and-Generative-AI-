@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Faculty Login - Smart Room Allotment System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+/* Custom Internal CSS for professional look and color consistency */
+body {
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background-color: #f5f7fa;
+}
+.w3-bar, h1, button {
+    font-family: "Montserrat", sans-serif;
+}
+.w3-red-theme {
+    background-color: #cc0000 !important;
+    color: white !important;
+}
+.w3-text-red-theme {
+    color: #cc0000 !important;
+}
+.w3-input-focus:focus {
+    border-color: #cc0000 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.2);
+}
+.w3-button.w3-red-theme:hover {
+    background-color: #990000 !important;
+}
+.w3-card-4 {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="w3-top">
+  <div class="w3-bar w3-red-theme w3-card w3-left-align w3-large">
+    <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red-theme" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+    <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Home</a>
+    <a href="faculty-login.html" class="w3-bar-item w3-button w3-padding-large w3-white">Faculty Login</a>
+    <a href="index.html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Dashboard</a>
+  </div>
+</div>
+
+<div class="w3-container" style="padding:128px 16px">
+  <div class="w3-content w3-center" style="max-width:450px; margin:auto;">
+    
+    <div class="w3-card-4 w3-white w3-round-large w3-padding-large">
+      <h2 class="w3-text-red-theme w3-center">Faculty / Staff Login</h2>
+      <p class="w3-text-grey">Log in with your academic credentials for priority scheduling.</p>
+
+      <form class="w3-container" id="loginForm">
+        
+        <p>
+          <label class="w3-text-red-theme"><b>USER ID</b></label>
+          <input class="w3-input w3-border w3-round-large w3-input-focus" name="userId" id="userId" type="text" required>
+        </p>
+        
+        <p>
+          <label class="w3-text-red-theme"><b>EMAIL</b></label>
+          <input class="w3-input w3-border w3-round-large w3-input-focus" name="email" id="email" type="email" required>
+        </p>
+
+        <p>
+          <label class="w3-text-red-theme"><b>STAFF ID</b></label>
+          <input class="w3-input w3-border w3-round-large w3-input-focus" name="staffId" id="staffId" type="text" required>
+        </p>
+
+        <p>
+          <label class="w3-text-red-theme"><b>PASSWORD</b></label>
+          <input class="w3-input w3-border w3-round-large w3-input-focus" name="password" id="password" type="password" required>
+        </p>
+        
+        <p class="w3-left-align">
+            <input class="w3-check w3-margin-right" type="checkbox" checked="checked">
+            <label>Remember Me</label>
+        </p>
+        
+        <button type="submit" class="w3-button w3-block w3-red-theme w3-padding-large w3-margin-top w3-margin-bottom w3-round-large">Log In as Faculty</button>
+      </form>
+
+      <div id="loginMessage" class="w3-panel w3-margin-top w3-hide"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="w3-container w3-padding-32 w3-center w3-opacity w3-light-grey">
+  <p>Smart Room Allotment System</p>
+</footer>
+
+<script>
+function myFunction() {
+  var x = document.getElementById("navDemo");
+  if (x.className.indexOf("w3-show") == -1) {
+    x.className += " w3-show";
+  } else {
+    x.className = x.className.replace(" w3-show", "");
+  }
+}
+
+document.getElementById('loginForm').addEventListener('submit', function(event) {
+  event.preventDefault(); 
+  
+  const messageDiv = document.getElementById('loginMessage');
+  
+  messageDiv.className = 'w3-panel w3-green w3-round';
+  messageDiv.innerHTML = `✅ Login successful! Redirecting to **FACULTY DASHBOARD**...`;
+  messageDiv.classList.remove('w3-hide');
+
+  setTimeout(() => {
+    window.location.href = 'index.html'; 
+  }, 1000); 
+});
+</script>
+
+</body>
+</html>

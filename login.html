@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Login - Select Role</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+/* Custom Internal CSS for professional look and color consistency */
+body {
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background-color: #f5f7fa; /* Light background */
+}
+.w3-bar, h1, button {
+    font-family: "Montserrat", sans-serif;
+}
+.w3-red-theme {
+    /* Slightly deeper red for professionalism */
+    background-color: #cc0000 !important;
+    color: white !important;
+}
+.w3-text-red-theme {
+    color: #cc0000 !important;
+}
+.w3-input-focus:focus {
+    border-color: #cc0000 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.2);
+}
+.w3-button.w3-red-theme:hover {
+    background-color: #990000 !important;
+}
+.w3-card-4 {
+    /* Subtle elevated shadow */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+.role-button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 20px 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: transform 0.2s;
+}
+.role-button:hover {
+    transform: scale(1.02);
+}
+.w3-blue-role { background-color: #0056b3 !important; }
+.w3-green-role { background-color: #10b981 !important; }
+.w3-red-role { background-color: #ef4444 !important; }
+</style>
+</head>
+<body>
+
+<div class="w3-top">
+  <div class="w3-bar w3-red-theme w3-card w3-left-align w3-large">
+    <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red-theme" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+    <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Home</a>
+    <a href="login.html" class="w3-bar-item w3-button w3-padding-large w3-white">Select Role</a>
+    <a href="index.html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Dashboard</a>
+  </div>
+</div>
+
+<div class="w3-container" style="padding:128px 16px">
+  <div class="w3-content w3-center" style="max-width:450px; margin:auto;">
+    
+    <div class="w3-card-4 w3-white w3-round-large w3-padding-large">
+      <h2 class="w3-text-red-theme w3-center">Access Portal</h2>
+      <p class="w3-text-grey">Please select your user role to proceed to the dedicated login panel.</p>
+
+      <div class="w3-section">
+        <a href="admin.html" class="w3-button w3-block w3-round-large role-button w3-yellow-role">
+          <i class="fa fa-user-secret w3-margin-right"></i> ADMINISTRATOR
+        </a>
+        <a href="faculty.html" class="w3-button w3-block w3-round-large role-button w3-yellow-role">
+          <i class="fa fa-graduation-cap w3-margin-right"></i> FACULTY / STAFF
+        </a>
+        <a href="studentlogin.html" class="w3-button w3-block w3-round-large role-button w3-yellow-role">
+          <i class="fa fa-users w3-margin-right"></i> STUDENT
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<footer class="w3-container w3-padding-32 w3-center w3-opacity w3-light-grey">
+  <p>Smart Room Allotment System</p>
+</footer>
+
+<script>
+// Toggle function for the mobile navigation menu
+function myFunction() {
+  var x = document.getElementById("navDemo");
+  if (x.className.indexOf("w3-show") == -1) {
+    x.className += " w3-show";
+  } else {
+    x.className = x.className.replace(" w3-show", "");
+  }
+}
+</script>
+
+</body>
+</html>
