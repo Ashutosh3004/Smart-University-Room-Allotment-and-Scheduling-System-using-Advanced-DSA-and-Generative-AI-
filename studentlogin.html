@@ -85,27 +85,20 @@ body {
 </footer>
 
 <script>
-function myFunction() {
-  var x = document.getElementById("navDemo");
-  if (x.className.indexOf("w3-show") == -1) {
-    x.className += " w3-show";
-  } else {
-    x.className = x.className.replace(" w3-show", "");
-  }
-}
+// ... (MyFunction definition) ...
 
 document.getElementById('loginForm').addEventListener('submit', function(event) {
   event.preventDefault(); 
-  
   const messageDiv = document.getElementById('loginMessage');
   
   messageDiv.className = 'w3-panel w3-green w3-round';
-  messageDiv.innerHTML = `✅ Login successful! Redirecting to **STUDENT DASHBOARD**...`;
+  messageDiv.innerHTML = `✅ Login successful! Redirecting to **STUDENT VIEW DASHBOARD**...`;
   messageDiv.classList.remove('w3-hide');
 
+  // CRITICAL FIX: Use location.replace
   setTimeout(() => {
-    window.location.href = 'index.html'; 
-  }, 1000); 
+    window.location.replace('dashboard.html'); 
+  }, 100); 
 });
 </script>
 
