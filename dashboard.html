@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Dashboard - View Schedules</title>
+<title>Student Dashboard - View & Request</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
@@ -13,7 +13,7 @@
 /* Custom Layout for the Dashboard */
 .dashboard-layout {
     display: grid;
-    grid-template-columns: 300px 1fr; /* Split into Request Form (left) and Schedule (right) */
+    grid-template-columns: 370px 1fr; 
     gap: 20px;
     padding: 20px;
     margin-top: 50px;
@@ -28,28 +28,10 @@
     align-items: center;
     margin-bottom: 20px;
 }
-/* Ensure the schedule table looks clean */
-#scheduleTable table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-#scheduleTable th, #scheduleTable td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    font-size: 14px;
-}
-/* Card style for consistency */
-.card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.w3-red-theme {
-    background-color: #cc0000 !important;
-}
+#scheduleTable table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+#scheduleTable th, #scheduleTable td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+.card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.w3-red-theme { background-color: #cc0000 !important; color: white !important; }
 </style>
 </head>
 <body>
@@ -58,21 +40,20 @@
   <div class="w3-bar w3-red-theme w3-card w3-left-align w3-large">
     <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Home</a>
     <a href="student-login.html" class="w3-bar-item w3-button w3-padding-large w3-white">Student View</a>
-    <a href="control-panel.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Control Panel</a>
   </div>
 </div>
 
 <div class="dashboard-layout">
     
     <div class="card">
-        <h3 class="w3-text-red-theme">Submit Booking Request</h3>
+        <h3 class="w3-text-red-theme" style="color: #cc0000 !important;">Submit Booking Request</h3>
         <p class="w3-text-grey w3-small">Use natural language to submit your room request for Admin approval.</p>
 
-        <label>Your Name (For Request)</label>
-        <input id="userName" placeholder="Student Name/Group" class="w3-input w3-border w3-round-large" required>
+        <label>Your Name</label>
+        <input id="userName" placeholder="Student Name" class="w3-input w3-border w3-round-large" required>
         
         <label style="margin-top: 15px;">AI Command Prompt</label>
-        <textarea id="aiPrompt" rows="3" placeholder="e.g., 'Request B101 for tomorrow from 10:00 to 12:00 for study.'" class="w3-input w3-border w3-round-large" required></textarea>
+        <textarea id="aiPrompt" rows="3" placeholder="e.g., 'Request B101 for tomorrow from 10:00 to 12:00'" class="w3-input w3-border w3-round-large" required></textarea>
 
         <button id="processRequestBtn" class="w3-button w3-block w3-red-theme w3-round-large w3-margin-top">Process Request</button>
         
@@ -81,20 +62,19 @@
   
     <div>
         <div class="w3-container w3-padding-16">
-            <h1 class="w3-text-red-theme">University Schedule Dashboard</h1>
-            <p class="w3-text-grey">Real-time room availability, automatically prioritized by system intelligence.</p>
+            <h1 style="color: #cc0000;">University Schedule Dashboard</h1>
+            <p class="w3-text-grey">Real-time room availability.</p>
         </div>
 
         <div class="filter-bar">
-            <label for="filterRoom">Filter by Room:</label>
+            <label>Filter by Room:</label>
             <select id="filterRoom" class="w3-select w3-border w3-round-large" style="width: 200px;"></select>
-
-            <button id="applyFilterBtn" class="w3-button w3-red-theme w3-round-large"><i class="fa fa-search"></i> Apply Filter</button>
-            <button id="refreshScheduleBtn" class="w3-button w3-light-grey w3-round-large"><i class="fa fa-refresh"></i> Refresh</button>
+            <button id="applyFilterBtn" class="w3-button w3-red-theme w3-round-large">Apply Filter</button>
+            <button id="refreshScheduleBtn" class="w3-button w3-light-grey w3-round-large">Refresh</button>
         </div>
 
-        <div class="card w3-padding-large w3-round-large">
-            <h3 class="w3-text-red-theme">Current Room Utilization</h3>
+        <div class="card">
+            <h3 style="color: #cc0000;">Current Room Utilization</h3>
             <div id="scheduleTable">
                 <p class="w3-text-grey" id="loadingMessage">Loading schedule from server...</p>
             </div>
@@ -102,34 +82,31 @@
     </div>
 </div>
 
-<footer class="w3-container w3-padding-32 w3-center w3-opacity w3-light-grey">
-  <p>Smart Room Allotment System</p>
-</footer>
-
 <script>
 const API_BASE_URL = 'http://localhost:5000/api/schedule';
 
 let currentSchedule = [];
 let availableRooms = [];
-const currentRole = 'student'; // Hardcoded for this page
-
-// --- Utility Functions (Removed for brevity, assuming you kept them) ---
+const currentRole = 'student'; // Hardcoded for Student Dashboard
 
 function fetchSchedule() {
-    // Fetches the schedule data from the Flask API
     fetch(`${API_BASE_URL}/view`)
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                currentSchedule = data.schedule;
+                // CRITICAL: Sync variable names with backend
+                currentSchedule = data.schedule; 
                 availableRooms = data.rooms;
+                
                 populateRoomFilter(availableRooms);
-                // Render initial state
                 renderScheduleTable(currentSchedule, document.getElementById('filterRoom').value); 
+                
+                const loader = document.getElementById('loadingMessage');
+                if(loader) loader.style.display = 'none';
             }
         })
         .catch(err => {
-            document.getElementById('scheduleTable').innerHTML = '<p class="w3-text-red">❌ CONNECTION ERROR: Ensure Python server is running on port 5000.</p>';
+            document.getElementById('scheduleTable').innerHTML = '<p style="color:red">❌ Connection Error. Ensure server is running.</p>';
         });
 }
 
@@ -160,19 +137,20 @@ function renderScheduleTable(scheduleData, filterRoomId) {
     let tableHtml = '<table><thead><tr><th>Room</th><th>Time Slot</th><th>Date</th><th>Booked By</th><th>Role</th></tr></thead><tbody>';
 
     filteredData.forEach(booking => {
+        // CRITICAL FIX: Use keys matching api_server.py (start_time, end_time, user_role)
         const roomName = availableRooms.find(r => r.id === booking.room_id)?.name || booking.room_id;
-        let roleClass = 'w3-tag w3-tag-standard';
-        if (booking.user_role === 'admin') { roleClass = 'w3-tag w3-blue'; } 
-        else if (booking.user_role === 'faculty') { roleClass = 'w3-tag w3-green'; }
-        else { roleClass = 'w3-tag w3-light-grey'; }
+        
+        let roleClass = 'w3-tag w3-light-grey';
+        if (booking.user_role === 'admin') roleClass = 'w3-tag w3-blue';
+        if (booking.user_role === 'faculty') roleClass = 'w3-tag w3-green';
 
         tableHtml += `
             <tr>
                 <td><strong>${roomName}</strong></td>
-                <td>${booking.time}</td>
+                <td>${booking.start_time} - ${booking.end_time}</td>
                 <td>${booking.date}</td>
-                <td>${booking.booked_by}</td>
-                <td><span class="${roleClass}">${booking.user_role.toUpperCase()}</span></td>
+                <td>${booking.user_name}</td>
+                <td><span class="${roleClass}">${booking.user_role ? booking.user_role.toUpperCase() : 'N/A'}</span></td>
             </tr>`;
     });
     
@@ -180,18 +158,18 @@ function renderScheduleTable(scheduleData, filterRoomId) {
     container.innerHTML = tableHtml;
 }
 
-// --- NEW REQUEST SUBMISSION HANDLER ---
+// --- STUDENT REQUEST HANDLER ---
 document.getElementById('processRequestBtn').addEventListener('click', async () => {
     const user_prompt = document.getElementById('aiPrompt').value.trim();
     const user_name = document.getElementById('userName').value.trim(); 
     const resultEl = document.getElementById('requestResult');
 
     if (!user_prompt || !user_name) {
-        resultEl.className = 'w3-panel w3-red w3-round';
-        resultEl.innerHTML = 'Error: Name and AI Command must be filled.';
+        resultEl.innerHTML = '<div style="color:red">Error: Name and AI Command must be filled.</div>';
         return;
     }
     
+    // Use the AI Workflow route logic
     const payload = {
         prompt: user_prompt,
         user_role: currentRole, 
@@ -199,7 +177,8 @@ document.getElementById('processRequestBtn').addEventListener('click', async () 
     };
     
     try {
-        // Call the unified AI Workflow route
+        resultEl.innerHTML = '<div style="color:blue">Processing...</div>';
+        
         const response = await fetch(`${API_BASE_URL}/ai-workflow`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -208,33 +187,22 @@ document.getElementById('processRequestBtn').addEventListener('click', async () 
 
         const data = await response.json();
 
-        // Handle Responses
         if (data.status === 'success') {
-            resultEl.className = 'w3-panel w3-green w3-round';
-            resultEl.innerHTML = `✅ **AI-Parsed Request Submitted:** ${data.message}`;
+            resultEl.innerHTML = `<div style="color:green; font-weight:bold;">✅ ${data.message}</div>`;
         } else if (data.status === 'conflict_request') {
-            const suggestions = data.suggestions || [];
-            let suggestionHtml = suggestions.map(r => r.name).join(', ') || 'None found.';
-            
-            resultEl.className = 'w3-panel w3-yellow w3-round';
-            resultEl.innerHTML = `⚠️ **CONFLICT:** ${data.message}. <br> **Suggestions:** ${suggestionHtml}`;
+            // Show suggestions
+            const suggestionText = data.suggestion_text || 'No suggestions available.';
+            resultEl.innerHTML = `<div style="color:orange; font-weight:bold;">⚠️ ${data.message}<br><br>Suggestion: ${suggestionText}</div>`;
         } else {
-            // Catches AI parsing failures or other general errors
-            resultEl.className = 'w3-panel w3-red w3-round';
-            resultEl.innerHTML = `❌ SYSTEM ERROR: ${data.message}`;
+            resultEl.innerHTML = `<div style="color:red;">❌ ${data.message}</div>`;
         }
         
-        // Refresh the schedule view (since request count changed on backend)
-        fetchSchedule(); 
+        fetchSchedule(); // Refresh list
         
     } catch (error) {
-        resultEl.className = 'w3-panel w3-red w3-round';
-        resultEl.innerHTML = `❌ Connection Error. Cannot reach server.`;
+        resultEl.innerHTML = `<div style="color:red">❌ Connection Error.</div>`;
     }
 });
-
-
-// --- Event Listeners ---
 
 document.getElementById('applyFilterBtn').addEventListener('click', () => {
     const selectedRoomId = document.getElementById('filterRoom').value;
@@ -245,8 +213,6 @@ document.getElementById('refreshScheduleBtn').addEventListener('click', () => {
     fetchSchedule();
 });
 
-
-// --- Initial Load ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchSchedule();
 });
