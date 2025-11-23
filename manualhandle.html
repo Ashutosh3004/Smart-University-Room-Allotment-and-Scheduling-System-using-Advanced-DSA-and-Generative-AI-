@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Manual Booking Console - Smart Room Allotment</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="style.css"> 
+<style>
+/* Reusing the Professional Grid Layout */
+.layout-control {
+    display: grid;
+    grid-template-columns: 370px 1fr;
+    gap: 20px;
+    padding: 20px;
+    margin-top: 50px;
+}
+.card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.section-title { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.controls-row { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.stat-box { border-left: 4px solid red; padding: 10px; background: #f9f9f9; }
+
+/* Table Styling */
+.card table th, .card table td {
+    padding: 10px 15px; 
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+}
+.card table th { background-color: #f9fafb; font-weight: 700; }
+.w3-red-theme { background-color: #cc0000 !important; color: white !important; }
+
+/* Form Labels */
+label { font-weight: bold; font-size: 12px; color: #555; display: block; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="w3-top">
+  <div class="w3-bar w3-red-theme w3-card w3-left-align w3-large">
+    <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Home</a>
+    <span class="w3-bar-item w3-padding-large w3-white">Manual Console</span>
+  </div>
+</div>
+
+<div class="layout-control">
+  
+  <div>
+    <div class="card">
+      <h3 class="section-title"><i class="fa fa-edit"></i> Manual Override</h3>
+      <p class="w3-text-grey w3-small" style="margin-top: -5px;">Direct booking without AI parsing.</p>
+
+      <label>Select User (Faculty/Admin)</label>
+      <input id="manualUser" list="userList" class="w3-input w3-border w3-round" placeholder=" Name..." required>
+      <datalist id="userList"></datalist>
+
+      <label>Select Room</label>
+      <select id="manualRoom" class="w3-select w3-border w3-round" required>
+          <option value="" disabled selected>Loading rooms...</option>
+      </select>
+
+      <label>Date</label>
+      <input type="date" id="date" class="w3-input w3-border w3-round" required>
+
+      <div class="controls-row">
+          <div style="width: 48%;">
+              <label>Start Time</label>
+              <input type="time" id="manualStart" class="w3-input w3-border w3-round" required>
+          </div>
+          <div style="width: 48%;">
+              <label>End Time</label>
+              <input type="time" id="manualEnd" class="w3-input w3-border w3-round" required>
+          </div>
+      </div>
+
+      <button id="confirmBookBtn" class="w3-button w3-block w3-red-theme w3-round-large w3-margin-top">
+          Confirm Manual Booking
+      </button>
+
+      <div id="manualResult" class="w3-panel w3-margin-top w3-hide" style="padding:10px; border-radius:5px;"></div>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+      <h3 class="section-title">Room Availability Status</h3>
+      <div id="roomsList"></div> 
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+        <h3 class="section-title">System Metrics</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div id="statRoomCount">0</div>
+                <small>Total Rooms</small>
+            </div>
+            <div class="stat-box">
+                <div id="statAssignedPercent">0%</div>
+                <small>Utilization</small>
+            </div>
+            <div class="stat-box">
+                <div id="statClashTime">0</div>
+                <small>Booked Slots</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+      <h3 class="section-title">Current Schedule (Assigned Bookings)</h3>
+      <div id="assignedTable"></div> 
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Global State
+let rooms = [];
+let assignments = []; 
+
+// --- 1. DATA FETCHING & INITIALIZATION ---
+function refreshAllData() {
+    // Load Users
+    fetch(`${API_BASE_URL}/users`)
+        .then(res => res.json())
+        .then(data => {
+            const datalist = document.getElementById('userList');
+            datalist.innerHTML = '';
+            data.users.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                datalist.appendChild(opt);
+            });
+        });
+
+    // Load Schedule & Rooms
+    fetch(`${API_BASE_URL}/schedule/view`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                rooms = data.rooms;
+                assignments = data.schedule;
+
+                populateRoomSelect();
+                renderRooms();
+                renderSchedule();
+                updateStats();
+            }
+        })
+        .catch(err => console.error("Connection Error", err));
+}
+
+// --- 2. RENDERING FUNCTIONS ---
+
+function populateRoomSelect() {
+    const select = document.getElementById('manualRoom');
+    // Keep selected value if it exists
+    const currentVal = select.value;
+    select.innerHTML = '<option value="" disabled selected>Select Room</option>';
+    
+    rooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = `${r.name} (${r.id})`;
+        select.appendChild(opt);
+    });
+    
+    if (currentVal) select.value = currentVal;
+}
+
+function renderRooms() { 
+    const el = document.getElementById('roomsList'); el.innerHTML='';
+    const selectedDate = document.getElementById('date').value;
+
+    if (rooms.length === 0) {
+        el.innerHTML = '<div style="color:red;">No rooms loaded.</div>';
+        return;
+    }
+    
+    let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Status</th></tr></thead><tbody>';
+    
+    rooms.forEach(r => {
+        // Check if room is booked on the selected date
+        const bookingCount = assignments.filter(b => b.room_id === r.id && b.date === selectedDate).length;
+        
+        let statusBadge = '<span class="w3-tag w3-green w3-round" style="font-size:10px">Available</span>';
+        if (bookingCount > 0) {
+            statusBadge = `<span class="w3-tag w3-orange w3-text-white w3-round" style="font-size:10px">${bookingCount} Booked</span>`;
+        }
+
+        html += `<tr><td>${r.id}</td><td><strong>${r.name}</strong></td><td>${statusBadge}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderSchedule() {
+    const el = document.getElementById('assignedTable');
+    if (!assignments || assignments.length === 0) {
+        el.innerHTML = '<div class="w3-text-grey w3-small">No bookings found.</div>';
+        return;
+    }
+    
+    let rows = assignments.map(b => {
+        const room = rooms.find(r => r.id === b.room_id) || { name: b.room_id };
+        // Role badge color
+        let roleColor = 'w3-light-grey';
+        if(b.user_role === 'admin') roleColor = 'w3-blue';
+        if(b.user_role === 'faculty') roleColor = 'w3-green';
+
+        return `<tr>
+            <td><strong>${room.name}</strong></td>
+            <td>${b.start_time} - ${b.end_time}</td>
+            <td><span class="w3-tag ${roleColor} w3-round" style="font-size:10px">${b.user_role}</span></td>
+            <td>${b.user_name}</td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `<table><thead><tr><th>Room</th><th>Time</th><th>Role</th><th>User</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function updateStats() {
+    document.getElementById('statRoomCount').textContent = rooms.length;
+    document.getElementById('statClashTime').textContent = assignments.length;
+    const util = rooms.length > 0 ? ((assignments.length / rooms.length) * 100).toFixed(0) : 0;
+    document.getElementById('statAssignedPercent').textContent = `${util}%`;
+}
+
+// --- 3. MANUAL BOOKING HANDLER ---
+document.getElementById('confirmBookBtn').addEventListener('click', async () => {
+    const resultBox = document.getElementById('manualResult');
+    const payload = {
+        user_name: document.getElementById('manualUser').value,
+        room_id: document.getElementById('manualRoom').value,
+        date: document.getElementById('date').value,
+        start_time: document.getElementById('manualStart').value,
+        end_time: document.getElementById('manualEnd').value,
+        user_role: 'admin' // Manual override assumes Admin
+    };
+
+    if(!payload.user_name || !payload.room_id || !payload.date || !payload.start_time || !payload.end_time) {
+        resultBox.className = 'w3-panel w3-red w3-round';
+        resultBox.innerHTML = 'Please fill all fields.';
+        resultBox.classList.remove('w3-hide');
+        return;
+    }
+
+    try {
+        resultBox.className = 'w3-panel w3-blue w3-round';
+        resultBox.innerHTML = 'Processing...';
+        resultBox.classList.remove('w3-hide');
+
+        const response = await fetch(`${API_BASE_URL}/schedule/manual-book`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            resultBox.className = 'w3-panel w3-green w3-round';
+            resultBox.innerHTML = `✅ Success! ${data.message}`;
+            refreshAllData(); // Refresh table to show new booking
+        } else {
+            resultBox.className = 'w3-panel w3-yellow w3-round';
+            resultBox.innerHTML = `⚠️ ${data.message}`;
+        }
+    } catch (e) {
+        resultBox.className = 'w3-panel w3-red w3-round';
+        resultBox.innerHTML = '❌ Server Connection Error';
+    }
+});
+
+// --- 4. INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Set Today's Date
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    
+    // Load Data
+    refreshAllData();
+
+    // Add listener for date change to update room status list
+    document.getElementById('date').addEventListener('change', () => {
+        renderRooms();
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI Control Center - Smart Room Allotment System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="style.css"> 
+<style>
+/* Custom Layout for the Control Panel */
+.layout-control {
+    display: grid;
+    grid-template-columns: 370px 1fr;
+    gap: 20px;
+    padding: 20px;
+    margin-top: 50px; /* Space for fixed navbar */
+}
+.card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.section-title { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.controls-row { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+
+/* Styles needed by JS */
+.priority-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: white; }
+.p-admin { background: #0056b3; } .p-fac { background: #10b981; } .p-student { background: #9ca3af; }
+.result-assigned { background: #d4edda; color: #155724; padding: 8px; border-radius: 5px; }
+.result-unassigned { background: #f8d7da; color: #721c24; padding: 8px; border-radius: 5px; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.stat-box { border-left: 4px solid red; padding: 10px; background: #f9f9f9; }
+
+/* Table Spacing Fix */
+.card table th, 
+.card table td {
+    padding: 10px 15px; 
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+}
+.card table th {
+    background-color: #f9fafb;
+    font-weight: 700;
+}
+</style>
+</head>
+<body>
+<div id="flash-message-container" style="position: fixed; top: 10px; right: 10px; z-index: 1000; width: 300px;"></div>
+
+<div class="w3-top">
+  <div class="w3-bar w3-red w3-card w3-left-align w3-large">
+    <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-white">Home</a>
+    <a href="dashboard(faculty).html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">View Schedule</a> 
+    <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+  </div>
+</div>
+
+<div class="layout-control">
+  <div>
+    <div class="card">
+      <h3 class="section-title">Natural Language Scheduler</h3>
+      
+      <label>User Name (For Booking)</label>
+      <input id="userName" list="userList" placeholder="Start typing to search..." class="w3-input w3-border" required>
+      <datalist id="userList"></datalist>
+      
+      <label style="margin-top: 20px;">AI Command Prompt</label>
+      <textarea id="aiPrompt" rows="4" placeholder="e.g., 'Book Classroom R101 for tomorrow from 10:00 to 12:00 for a seminar.'" class="w3-input w3-border" required></textarea>
+
+      <div class="controls-row" style="margin-top: 15px;">
+        <button id="processCommandBtn" style="background: #0056b3; width: 100%; font-weight: bold; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Process AI Command</button> 
+      </div>
+
+      <div id="allotResult" style="margin-top: 10px;"></div>
+    </div>
+    
+    
+
+    <div class="card" style="margin-top: 15px;">
+      <h3 class="section-title">Room Availability Status</h3>
+      
+      <label style="font-size: 12px; color: gray;">Check status for date:</label>
+      <input id="date" type="date" class="w3-input w3-border w3-round w3-small" style="margin-bottom: 10px;">
+      
+      <div id="roomsList"></div> 
+      
+      <div class="controls-row">
+          <button id="seedRoomsBtn" style="width: 100%; padding: 8px;">Refresh Status</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+        <h3 class="section-title">System Metrics</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div id="statRoomCount">0</div>
+                <small>Total Rooms</small>
+            </div>
+            <div class="stat-box">
+                <div id="statAssignedPercent">0%</div>
+                <small>Room Utilization</small>
+            </div>
+            <div class="stat-box">
+                <div id="statClashTime">0</div>
+                <small>Booked Slots</small>
+            </div>
+        </div>
+        <div class="controls-row">
+             <button id="clearAssigned" style="background: red; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer;">Clear Schedule</button> 
+             
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+      <h3 class="section-title">Current Schedule (Assigned Bookings)</h3>
+      <div id="assignedTable"></div> 
+    </div>
+    <div class="card" style="margin-top: 15px;">
+        <h3 class="section-title">Manual Override (Admin Only)</h3>
+        <p class="w3-text-grey w3-small">Direct entry bypassing AI parser.</p>
+        <a href="manualhandle.html" class="w3-button w3-red w3-round-large w3-margin-top w3-block">
+            Open Manual Booking Form
+        </a>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+      <h3 class="section-title">Pending Student Requests</h3>
+      <div id="unassignedTable"></div> 
+    </div>
+    <a href="adminrequests.html" class="w3-button w3-round" style="background: #4682B4; color: white; text-decoration: none;">
+                <i class="fa fa-list"></i> Review Requests
+    </a>
+  </div>
+  
+</div>
+
+<script>
+/* -------------------------------------------
+  DATA CONSTANTS & UTILITIES
+---------------------------------------------*/
+const API_BASE_URL = 'http://localhost:5000/api/schedule';
+
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
+// GLOBAL STATE
+let rooms = [];
+let assignments = []; 
+let currentRole = getQueryParam('role') || 'faculty'; 
+
+function parseTime(dateStr, hhmm){ return new Date(dateStr + 'T' + hhmm + ':00').getTime(); }
+function id() { return Math.random().toString(36).substring(2, 9); }
+
+function myFunction() { 
+    var x = document.getElementById("navDemo");
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+    } else {
+        x.className = x.className.replace(" w3-show", "");
+    }
+}
+
+// --- CRITICAL FIX: Populate User Dropdown ---
+function populateUserDropdown() {
+    fetch('http://localhost:5000/api/users')
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const datalist = document.getElementById('userList');
+                datalist.innerHTML = ''; 
+                data.users.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    datalist.appendChild(option);
+                });
+            }
+        })
+        .catch(err => console.log("User list load optional"));
+}
+
+// --- FLASH MESSAGE UTILITY ---
+function showFlashMessage(statusType, title, content) {
+    let container = document.getElementById('flash-message-container');
+    if (!container) {
+        const body = document.querySelector('body');
+        container = document.createElement('div');
+        container.id = 'flash-message-container';
+        container.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; width: 300px;';
+        body.insertBefore(container, body.firstChild);
+    }
+
+    const alertDiv = document.createElement('div');
+    let cssClass = 'flash-alert ';
+    if (statusType === 'success') cssClass += 'flash-success';
+    else if (statusType === 'conflict' || statusType === 'warning') cssClass += 'flash-warning';
+    else cssClass += 'flash-error';
+
+    alertDiv.className = cssClass;
+    alertDiv.innerHTML = `<strong>${title}</strong><br>${content}`;
+    container.appendChild(alertDiv);
+    
+    setTimeout(() => { alertDiv.classList.add('show'); }, 10);
+    setTimeout(() => {
+        alertDiv.style.opacity = 0;
+        alertDiv.style.transform = 'translateX(100%)';
+        setTimeout(() => { if(container.contains(alertDiv)) container.removeChild(alertDiv); }, 500); 
+    }, 6000);
+}
+
+
+/* -------------------------
+  Render Helpers & Statistics
+--------------------------*/
+
+// --- UPDATED: DYNAMIC ROOM STATUS RENDER ---
+function renderRooms(){ 
+    const el = document.getElementById('roomsList'); el.innerHTML='';
+    
+    // Default to today if date input is empty
+    const dateInput = document.getElementById('date');
+    let selectedDate = dateInput.value;
+    if (!selectedDate) {
+        selectedDate = new Date().toISOString().split('T')[0];
+        dateInput.value = selectedDate; // Auto-fill today
+    }
+
+    if (rooms.length === 0) {
+        el.innerHTML = '<div style="color:red; font-weight:bold;">No rooms found in dataset.</div>';
+        return;
+    }
+    
+    // Table with Status Column
+    let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Status</th></tr></thead><tbody>';
+    
+    rooms.forEach(r => {
+        // Check if room is booked on the selected date
+        const bookingCount = assignments.filter(b => b.room_id === r.id && b.date === selectedDate).length;
+        
+        let statusBadge = '<span class="w3-tag w3-green w3-round" style="font-size:10px">Available</span>';
+        if (bookingCount > 0) {
+            statusBadge = `<span class="w3-tag w3-orange w3-text-white w3-round" style="font-size:10px">${bookingCount} Booked</span>`;
+        }
+
+        html += `<tr>
+            <td>${r.id}</td>
+            <td><strong>${r.name}</strong></td>
+            <td>${statusBadge}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderSchedule(scheduleData) {
+    const el = document.getElementById('assignedTable'); el.innerHTML = '';
+    
+    if (!scheduleData || scheduleData.length === 0) {
+        el.innerHTML = '<div class="muted small">No scheduled bookings yet.</div>';
+        return;
+    }
+
+    let rows = scheduleData.map(b => {
+        const room = rooms.find(r => r.id === b.room_id) || { name: 'Unknown Room' };
+        const priorityColor = (b.user_role === 'admin') ? 'p-admin' : (b.user_role === 'faculty') ? 'p-fac' : 'p-student';
+
+        return `
+            <tr class="assigned-row">
+                <td><strong>${room.name}</strong></td>
+                <td>${b.start_time} - ${b.end_time}</td> 
+                <td><span class="priority-badge ${priorityColor}">${b.user_role}</span></td>
+                <td>${b.user_name}</td> 
+            </tr>`;
+    }).join('');
+
+    let html = '<table><thead><tr><th>Room</th><th>Time Slot</th><th>Role</th><th>Booked By</th></tr></thead><tbody>';
+    html += rows;
+    el.innerHTML = html + '</tbody></table>';
+    
+    assignments = scheduleData;
+}
+
+function renderUnassigned(requestQueueLength) {
+    const el = document.getElementById('unassignedTable');
+    el.innerHTML = `<div class="w3-small">Total Pending Student Requests: <strong>${requestQueueLength}</strong></div>`;
+}
+
+function updateStats(){
+    const totalRooms = rooms.length;
+    const assignedCount = assignments.length; 
+    
+    const successRate = totalRooms > 0 ? ((assignedCount / totalRooms) * 100).toFixed(1) : 0;
+    const totalBookedSlots = assignedCount;
+
+    document.getElementById('statRoomCount').textContent = totalRooms.toString();
+    document.getElementById('statAssignedPercent').textContent = `${successRate}%`;
+    document.getElementById('statClashTime').textContent = `${totalBookedSlots}`; 
+}
+
+function refreshSchedule() {
+    fetch(`${API_BASE_URL}/view`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                rooms = data.rooms; 
+                assignments = data.schedule; // Update global assignments for renderRooms check
+                
+                renderRooms(); // Will now check assignments against date
+                renderSchedule(data.schedule); 
+                updateStats(); 
+                
+                const requestQueueLength = data.requests_queue_length || 0; 
+                renderUnassigned(requestQueueLength); 
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching schedule:', err);
+            document.getElementById('assignedTable').innerHTML = '<div style="color:red;">❌ Final Connection Error: Server may be down.</div>';
+        });
+}
+
+
+/* -------------------------
+  API INTERACTION HANDLERS
+--------------------------*/
+
+document.getElementById('processCommandBtn').addEventListener('click', async ()=>{
+    const user_prompt = document.getElementById('aiPrompt').value.trim();
+    const user_name = document.getElementById('userName').value.trim(); 
+    const resultEl = document.getElementById('allotResult');
+
+    if (!user_prompt || !user_name) {
+        resultEl.innerHTML = '<div class="result-unassigned">Error: User Name and AI Command must be filled.</div>';
+        showFlashMessage('error', 'Input Error', 'Please fill in both name and command.');
+        return;
+    }
+    
+    const payload = {
+        prompt: user_prompt,
+        user_role: currentRole, 
+        user_name: user_name
+    };
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/ai-workflow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            resultEl.innerHTML = `<div class="result-assigned">✅ **AI-Parsed Command Executed!**</div>`;
+            showFlashMessage('success', 'Booking Confirmed', data.message);
+        } else if (data.status === 'conflict' || data.status === 'conflict_request') {
+            const suggestionText = data.suggestion_text || 'No detailed AI analysis available.';
+            
+            resultEl.innerHTML = `<div class="result-unassigned">
+                ⚠️ **CONFLICT/REQUEST FAILURE.** <br>
+                <span style="font-weight: 600;">AI Analysis:</span> ${suggestionText}
+            </div>`;
+            showFlashMessage('conflict', 'Conflict Detected', data.message);
+        } else {
+            resultEl.innerHTML = `<div class="result-unassigned">❌ SYSTEM/AI ERROR: ${data.message}</div>`;
+            showFlashMessage('error', 'System Error', data.message);
+        }
+        
+        refreshSchedule(); 
+        
+    } catch (error) {
+        console.error('API Error:', error);
+        resultEl.innerHTML = `<div class="result-unassigned">❌ Connection Error. Is the server running?</div>`;
+        showFlashMessage('error', 'Connection Failed', 'Could not reach the Python server.');
+    }
+});
+
+document.getElementById('seedRoomsBtn').addEventListener('click', ()=>{
+    refreshSchedule();
+});
+
+// Update rooms list when date changes
+document.getElementById('date').addEventListener('change', ()=>{
+    renderRooms();
+});
+
+document.getElementById('clearAssigned').addEventListener('click', async ()=>{
+    const resultEl = document.getElementById('allotResult');
+    if(!confirm("Are you sure you want to clear the schedule?")) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/clear`, { method: 'POST' });
+        const data = await response.json();
+        resultEl.innerHTML = `<div class="result-assigned">✅ ${data.message}</div>`;
+        showFlashMessage('success', 'Schedule Cleared', data.message);
+        refreshSchedule(); 
+    } catch (error) {
+        resultEl.innerHTML = `<div class="result-unassigned">❌ Failed to clear schedule.</div>`;
+        showFlashMessage('error', 'Clear Failed', 'Could not reset server schedule.');
+    }
+});
+
+
+/* Initial Load */
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize UI
+    document.getElementById('userName').placeholder = `${currentRole.toUpperCase()} Name`;
+    
+    // Set default date to today
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    populateUserDropdown();
+    refreshSchedule();
+});
+</script>
+</body>
+</html>

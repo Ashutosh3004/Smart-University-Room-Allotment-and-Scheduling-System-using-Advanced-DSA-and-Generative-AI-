@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Student Requests - Admin Review</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+body { font-family: "Segoe UI", sans-serif; background-color: #f5f7fa; }
+.card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+th { background-color: #f9fafb; font-weight: 700; }
+.w3-red-theme { background-color: #cc0000 !important; color: white !important; }
+.action-btn { padding: 5px 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="w3-top">
+  <div class="w3-bar w3-red-theme w3-card w3-left-align w3-large">
+    <a href="control-panel.html?role=admin" class="w3-bar-item w3-button w3-padding-large w3-hover-white"><i class="fa fa-arrow-left"></i> Back to Control Panel</a>
+    <span class="w3-bar-item w3-padding-large">Student Request Review</span>
+  </div>
+</div>
+
+<div class="w3-content" style="max-width:1000px; margin-top:80px; padding: 20px;">
+    
+    <div class="w3-container">
+        <h2 class="w3-text-red-theme">Pending Student Requests</h2>
+        <p class="w3-text-grey">Review requests below. After booking the room via AI Command, click "Mark Done" to remove the request.</p>
+    </div>
+
+    <div class="card">
+        <div id="requestsTable">
+            <p class="w3-text-grey">Loading requests...</p>
+        </div>
+        <div class="w3-center w3-margin-top">
+             <button onclick="fetchRequests()" class="w3-button w3-light-grey w3-round"><i class="fa fa-refresh"></i> Refresh List</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE_URL = 'http://localhost:5000/api/schedule';
+
+function fetchRequests() {
+    fetch(`${API_BASE_URL}/view`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderRequestsTable(data.requests);
+            } else {
+                document.getElementById('requestsTable').innerHTML = '<p style="color:red">Error fetching data.</p>';
+            }
+        })
+        .catch(err => {
+            document.getElementById('requestsTable').innerHTML = '<p style="color:red">❌ Connection Error. Ensure server is running.</p>';
+        });
+}
+
+function renderRequestsTable(requests) {
+    const container = document.getElementById('requestsTable');
+    
+    if (!requests || requests.length === 0) {
+        container.innerHTML = '<p class="w3-text-grey">No pending requests found.</p>';
+        return;
+    }
+
+    let html = '<table><thead><tr><th>ID</th><th>Student Name</th><th>Room ID</th><th>Time</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+    
+    requests.forEach(req => {
+        const rId = req.id || 'N/A';
+        const rName = req.user_name || 'Unknown';
+        const rRoom = req.room_id || 'N/A';
+        const rTime = (req.start_time && req.end_time) ? `${req.start_time} - ${req.end_time}` : 'N/A';
+
+        html += `
+            <tr>
+                <td><span class="w3-tag w3-light-grey w3-small">${rId}</span></td>
+                <td><strong>${rName}</strong></td>
+                <td>${rRoom}</td>
+                <td>${rTime}</td>
+                <td><span class="w3-tag w3-orange w3-text-white w3-round">Pending</span></td>
+                <td>
+                    <button onclick="resolveRequest('${rId}')" class="w3-button w3-green w3-round action-btn">
+                        <i class="fa fa-check"></i> Mark Done
+                    </button>
+                </td>
+            </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+// --- NEW FUNCTION: Resolve/Delete Request ---
+async function resolveRequest(reqId) {
+    if(!confirm("Are you sure you want to mark this request as done?")) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/request/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: reqId }),
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            // Refresh the list immediately to show it's gone
+            fetchRequests();
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (error) {
+        alert("Connection Error: Could not delete request.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchRequests);
+</script>
+
+</body>
+</html>
