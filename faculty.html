@@ -61,11 +61,7 @@ body {
           <label class="w3-text-red-theme"><b>USER ID</b></label>
           <input class="w3-input w3-border w3-round-large w3-input-focus" name="userId" id="userId" type="text" required>
         </p>
-        
-        <p>
-          <label class="w3-text-red-theme"><b>EMAIL</b></label>
-          <input class="w3-input w3-border w3-round-large w3-input-focus" name="email" id="email" type="email" required>
-        </p>
+
 
         <p>
           <label class="w3-text-red-theme"><b>STAFF ID</b></label>
@@ -95,29 +91,21 @@ body {
 </footer>
 
 <script>
-function myFunction() {
-  var x = document.getElementById("navDemo");
-  if (x.className.indexOf("w3-show") == -1) {
-    x.className += " w3-show";
-  } else {
-    x.className = x.className.replace(" w3-show", "");
-  }
-}
+// ... (MyFunction definition) ...
 
 document.getElementById('loginForm').addEventListener('submit', function(event) {
   event.preventDefault(); 
-  
   const messageDiv = document.getElementById('loginMessage');
   
   messageDiv.className = 'w3-panel w3-green w3-round';
-  messageDiv.innerHTML = `✅ Login successful! Redirecting to **FACULTY DASHBOARD**...`;
+  messageDiv.innerHTML = `✅ Login successful! Redirecting to **FACULTY CONTROL PANEL**...`;
   messageDiv.classList.remove('w3-hide');
 
+  // CRITICAL FIX: Use location.replace
   setTimeout(() => {
-    window.location.href = 'index.html'; 
-  }, 1000); 
+    window.location.replace('controlpanel.html'); 
+  }, 100); 
 });
 </script>
-
 </body>
 </html>
