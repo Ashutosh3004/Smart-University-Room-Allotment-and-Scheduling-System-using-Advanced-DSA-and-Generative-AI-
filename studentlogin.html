@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
+  
 /* Custom Internal CSS for professional look and color consistency */
 body {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -44,7 +45,6 @@ body {
     <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red-theme" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
     <a href="index.html" class="w3-bar-item w3-button w3-padding-large w3-hover-white">Home</a>
     <a href="student-login.html" class="w3-bar-item w3-button w3-padding-large w3-white">Student Login</a>
-    <a href="index.html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Dashboard</a>
   </div>
 </div>
 
@@ -85,20 +85,42 @@ body {
 </footer>
 
 <script>
-// ... (MyFunction definition) ...
+// ... myFunction ...
 
-document.getElementById('loginForm').addEventListener('submit', function(event) {
+document.getElementById('loginForm').addEventListener('submit', async function(event) {
   event.preventDefault(); 
   const messageDiv = document.getElementById('loginMessage');
+  const studentId = document.getElementById('studentId').value;
+  const email = document.getElementById('universityMail').value; // Password isn't in your form? Add it if needed.
   
-  messageDiv.className = 'w3-panel w3-green w3-round';
-  messageDiv.innerHTML = `✅ Login successful! Redirecting to **STUDENT VIEW DASHBOARD**...`;
+  // NOTE: If your student form doesn't have a password field, 
+  // you might want to add one or just send a dummy password for the API check.
+  
+  messageDiv.className = 'w3-panel w3-blue w3-round';
+  messageDiv.innerHTML = 'Verifying...';
   messageDiv.classList.remove('w3-hide');
 
-  // CRITICAL FIX: Use location.replace
-  setTimeout(() => {
-    window.location.replace('dashboard.html'); 
-  }, 100); 
+  try {
+      const response = await fetch('http://localhost:5000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Sending 'studentId' as the user_id for checking
+          body: JSON.stringify({ user_id: studentId, password: "any", role: 'student' }) 
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+          messageDiv.className = 'w3-panel w3-green w3-round';
+          messageDiv.innerHTML = `✅ Access Granted. Redirecting...`;
+          setTimeout(() => { window.location.replace('dashboard.html'); }, 1000);
+      } else {
+          messageDiv.className = 'w3-panel w3-red w3-round';
+          messageDiv.innerHTML = `❌ ${data.message}`;
+      }
+  } catch (error) {
+      messageDiv.innerHTML = `❌ Connection Error.`;
+  }
 });
 </script>
 
