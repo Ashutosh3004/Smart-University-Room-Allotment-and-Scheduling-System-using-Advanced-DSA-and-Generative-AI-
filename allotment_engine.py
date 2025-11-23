@@ -1,169 +1,166 @@
+# api_server.py (Consolidated Logic and API)
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from datetime import datetime
+import random
+import string
+
+app = Flask(__name__)
+CORS(app) # Enable CORS
 # allotment_engine.py
 
 from datetime import datetime, timedelta
 
-# Utility: parse time for comparison (converts HH:MM to minutes since midnight)
+# --- UTILITIES ---
+
 def parse_time(date_str, hhmm):
+    """Converts YYYY-MM-DD HH:MM to epoch milliseconds."""
     try:
         dt_obj = datetime.strptime(f"{date_str} {hhmm}", "%Y-%m-%d %H:%M")
-        return dt_obj.timestamp() * 1000 # Return milliseconds since epoch
+        return dt_obj.timestamp() * 1000 
     except ValueError:
-        return 0 # Handle bad date/time input
+        return 0
 
-# Utility: check time overlap
-def times_overlap(a_start, a_end, b_start, b_end, min_gap_minutes=0):
-    gap_ms = min_gap_minutes * 60 * 1000
-    # If A ends before B starts OR B ends before A starts (with gap), no overlap.
-    if a_end + gap_ms <= b_start:
-        return False
-    if b_end + gap_ms <= a_start:
+def times_overlap(a_start, a_end, b_start, b_end):
+    """Checks for simple time conflict (gap is not a factor since resources are removed)."""
+    if a_end <= b_start or b_end <= a_start:
         return False
     return True
 
-# --- CORE SMART ALLOTMENT ALGORITHM (Ported from JavaScript) ---
-def run_smart_allotment(payload):
-    rooms = payload.get('rooms', [])
-    requests = payload.get('requests', [])
-    constraints = payload.get('constraints', {})
+# --- DATASETS (Pre-provided Simulation) ---
+
+# This simulates data read from the database/pre-provided dataset.
+# The `rooms` list will be simplified as resources are removed.
+ROOMS_DATASET = [
+    {"id": "B101", "name": "Classroom B101"},
+    {"id": "B102", "name": "Classroom B102"},
+    {"id": "B111", "name": "Lab 201"},
+    {"id": "A315", "name": "Seminar Hall"}
+]
+
+# Schedule list will hold the actual bookings. Start empty for fresh run.
+SCHEDULE_DATASET = []
+
+# --- SCHEDULING LOGIC ---
+
+def check_conflict(room_id, start_ts, end_ts):
+    """Checks if a room is already booked during the requested time slot."""
+    for booking in SCHEDULE_DATASET:
+        if booking['room_id'] == room_id:
+            if times_overlap(booking['start_ts'], booking['end_ts'], start_ts, end_ts):
+                return booking # Conflict found, return the conflicting booking
+    return None # No conflict found
+
+def book_new_slot(room_id, user_role, user_name, date, start_time, end_time):
+    """
+    Attempts to book a new slot.
+    Permissions check: Only Admin/Faculty can book directly.
+    """
+    if user_role not in ['admin', 'faculty']:
+        return {"status": "error", "message": "Permission Denied: Only Admin or Faculty can book directly."}
+
+    start_ts = parse_time(date, start_time)
+    end_ts = parse_time(date, end_time)
+
+    if start_ts >= end_ts:
+        return {"status": "error", "message": "Time Error: Start time must be before end time."}
     
-    min_gap = constraints.get('minGap', 0)
-    allow_over = constraints.get('allowOver', 'false') == 'true'
-    weights = constraints.get('weights', {})
-
-    assignments = []
-    unassigned = []
-    schedule_by_room = {r['id']: [] for r in rooms}
-
-    # 1. Score and sort requests (Priority > Duration > Attendees)
-    reqs_scored = []
-    for r in requests:
-        start_ts = parse_time(r['date'], r['start'])
-        end_ts = parse_time(r['date'], r['end'])
-        
-        # Calculate duration in minutes
-        duration = (end_ts - start_ts) / 60000 if end_ts > start_ts else 0
-        
-        r['duration'] = duration
-        r['score'] = weights.get(r['userType'], 50)
-        r['start_ts'] = start_ts
-        r['end_ts'] = end_ts
-        reqs_scored.append(r)
-        
-    reqs_scored.sort(key=lambda r: (-r['score'], r['duration'], -r['attendees']))
-
-    # 2. Process requests in prioritized order
-    for req in reqs_scored:
-        allocation_reason = ''
-        
-        # Candidate rooms filter (match constraints)
-        candidates = []
-        for r in rooms:
-            # Type match
-            if req.get('prefType') and r['type'] != req['prefType']:
-                allocation_reason = 'Type mismatch'
-                continue
-            
-            # Gender constraints (for hostel rooms)
-            if r['type'] == 'hostel' and req['gender'] != 'any' and r['gender'] != 'any' and r['gender'] != req['gender']:
-                allocation_reason = 'Gender mismatch (Hostel)'
-                continue
-                
-            # Resource tags
-            need_tags = [s.strip().lower() for s in req.get('need', '').split(',') if s.strip()]
-            room_tags_lower = [x.lower() for x in r.get('tags', [])]
-            if need_tags and not all(nt in room_tags_lower for nt in need_tags):
-                allocation_reason = 'Missing required resource tags'
-                continue
-                
-            # Capacity rule
-            if not allow_over and r['capacity'] < req['attendees']:
-                allocation_reason = 'Capacity too small (Strict)'
-                continue
-                
-            candidates.append(r)
-
-        # Sort candidates by capacity ascending (Smallest fitting room first)
-        candidates.sort(key=lambda r: r['capacity'])
-
-        # Find room that is free (no overlap)
-        allocated_room = None
-        time_conflict_found = False
-        
-        for cand in candidates:
-            sch = schedule_by_room.get(cand['id'], [])
-            
-            # Check for conflict with existing bookings
-            conflict = any(times_overlap(s['start_ts'], s['end_ts'], req['start_ts'], req['end_ts'], min_gap) for s in sch)
-            
-            if not conflict:
-                allocated_room = cand
-                # Reserve room
-                schedule_by_room[cand['id']].append({
-                    'start_ts': req['start_ts'], 
-                    'end_ts': req['end_ts'], 
-                    'reqId': req['id']
-                })
-                break
-            else:
-                time_conflict_found = True
-
-        # Final Assignment or Failure Handling
-        if allocated_room:
-            assignments.append({'reqId': req['id'], 'roomId': allocated_room['id']})
-        else:
-            final_reason = allocation_reason
-            if time_conflict_found and not final_reason:
-                final_reason = 'Time conflict or minimum gap violation.'
-            elif not candidates:
-                final_reason = 'No rooms defined or no room matched all resource/type/capacity criteria.'
-            
-            unassigned.append({'reqId': req['id'], 'reason': final_reason or 'Failed to match any room.'})
-
-    return {
-        'assignments': assignments,
-        'unassigned': unassigned
+    # Check for conflict
+    conflicting_booking = check_conflict(room_id, start_ts, end_ts)
+    if conflicting_booking:
+        return {
+            "status": "conflict", 
+            "message": f"Conflict: Room {room_id} is already booked by {conflicting_booking['user_name']} during this time.",
+            "conflicting_booking": conflicting_booking
+        }
+    
+    # If no conflict, perform the booking
+    new_slot = {
+        "id": id_generator('B'),
+        "room_id": room_id,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "start_ts": start_ts,
+        "end_ts": end_ts,
+        "user_role": user_role,
+        "user_name": user_name
     }
+    SCHEDULE_DATASET.append(new_slot)
+    return {"status": "success", "message": f"Room {room_id} successfully booked by {user_name}."}
 
-# This is the logic from your app.py file, which is separate from the Smart Allotment:
-class Room:
-    # ... (Your existing Room class content) ...
-    def __init__(self, room_number, host, start_time, end_time, from_date, to_date):
-        self.room_number = room_number
-        self.host = host
-        self.start_time = start_time
-        self.end_time = end_time
-        self.from_date = from_date
-        self.to_date = to_date
-        self.capacity = 40
-        self.seats = [["Empty" for _ in range(4)] for _ in range(10)]
+def cancel_slot(booking_id, user_role):
+    """
+    Cancels a booking.
+    Permissions check: Only Admin/Faculty can cancel.
+    """
+    if user_role not in ['admin', 'faculty']:
+        return {"status": "error", "message": "Permission Denied: Only Admin or Faculty can cancel bookings."}
+    
+    global SCHEDULE_DATASET
+    initial_length = len(SCHEDULE_DATASET)
+    
+    # Remove the booking
+    SCHEDULE_DATASET = [b for b in SCHEDULE_DATASET if b['id'] != booking_id]
+    
+    if len(SCHEDULE_DATASET) < initial_length:
+        return {"status": "success", "message": f"Booking {booking_id} cancelled successfully."}
+    else:
+        return {"status": "error", "message": f"Booking ID {booking_id} not found."}
 
-    def display_seats(self):
-        serial = 1
-        empty_count = 0
-        seat_data = []
-        for i in range(10):
-            row_data = []
-            for j in range(4):
-                seat_status = f"{serial}. {self.seats[i][j]}"
-                row_data.append(seat_status)
-                if self.seats[i][j] == "Empty":
-                    empty_count += 1
-                serial += 1
-            seat_data.append(row_data)
-        return {"seats": row_data, "empty_count": empty_count}
+def submit_request(room_id, user_name, date, start_time, end_time):
+    """
+    Submits a booking request (read-only action).
+    This function primarily serves the Student role.
+    """
+    # Note: In a full system, this would go into a separate 'Requests' queue,
+    # but for simplicity, we just check the conflict and provide a suggestion.
+    
+    start_ts = parse_time(date, start_time)
+    end_ts = parse_time(date, end_time)
+    
+    if start_ts >= end_ts:
+        return {"status": "error", "message": "Time Error: Start time must be before end time."}
+    
+    conflicting_booking = check_conflict(room_id, start_ts, end_ts)
+    
+    if conflicting_booking:
+        # Conflict found: provide suggestion of vacant rooms
+        vacant_rooms = find_vacant_rooms(start_ts, end_ts)
+        return {
+            "status": "conflict_request", 
+            "message": f"Request for {room_id} denied: Conflict with {conflicting_booking['user_name']}.",
+            "vacant_suggestions": vacant_rooms,
+            "conflicting_booking": conflicting_booking
+        }
+    else:
+        # No conflict: request is successful (but still needs Admin/Faculty approval in a real system)
+        return {"status": "success", "message": f"Request for {room_id} submitted successfully. No conflict found."}
+
+def find_vacant_rooms(start_ts, end_ts):
+    """Finds all rooms that are vacant during a specific time period."""
+    vacant_rooms = []
+    for room in ROOMS_DATASET:
+        # Check if this room has any conflicts in the schedule
+        conflict = check_conflict(room['id'], start_ts, end_ts)
+        if conflict is None:
+            vacant_rooms.append(room)
+    return vacant_rooms
 
 
-class SmartUniversitySystem:
-    # ... (Your existing SmartUniversitySystem class content) ...
-    def __init__(self):
-        self.rooms = []
+def get_view_schedule(room_id=None):
+    """Returns the full schedule, filtered by room_id if provided."""
+    schedule = []
+    for booking in SCHEDULE_DATASET:
+        if room_id is None or booking['room_id'] == room_id:
+            schedule.append(booking)
+    
+    return {"status": "success", "schedule": schedule, "rooms": ROOMS_DATASET}
 
-    def book_room(self, room_number, host, start_time, end_time, from_date, to_date):
-        for r in self.rooms:
-            if r.room_number == room_number:
-                return {"status": "error", "message": f"Room {room_number} already exists!"}
-        new_room = Room(room_number, host, start_time, end_time, from_date, to_date)
-        self.rooms.append(new_room)
-        return {"status": "success", "message": f"Room {room_number} booked successfully!"}
-        
-    # (Other methods like allocate_seat, show_room, show_all_rooms omitted for brevity)
+# Utility for generating simple IDs (must be defined locally or imported)
+def id_generator(prefix):
+    import random
+    import string
+    return prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=5))
+
