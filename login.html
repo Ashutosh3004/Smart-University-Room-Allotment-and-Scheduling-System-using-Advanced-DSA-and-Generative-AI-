@@ -9,10 +9,29 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
+  
 /* Custom Internal CSS for professional look and color consistency */
 body {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
     background-color: #f5f7fa; /* Light background */
+}
+/* --- NEW BACKGROUND CSS --- */
+body, h1, h2, h3, h4, h5, h6 {font-family: "Lato", sans-serif;}
+
+body {
+    /* Link to your image file */
+    background-image: url('unnamed.webp');
+    
+    /* Ensure the image covers the whole screen nicely */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    /* Fix the background so it doesn't scroll with the page */
+    background-attachment: fixed;
+    
+    /* Ensure it takes full height */
+    min-height: 100vh;
 }
 .w3-bar, h1, button {
     font-family: "Montserrat", sans-serif;
