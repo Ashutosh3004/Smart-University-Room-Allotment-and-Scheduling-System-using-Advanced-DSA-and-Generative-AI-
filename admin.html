@@ -90,28 +90,20 @@ body {
 </footer>
 
 <script>
-function myFunction() {
-  var x = document.getElementById("navDemo");
-  if (x.className.indexOf("w3-show") == -1) {
-    x.className += " w3-show";
-  } else {
-    x.className = x.className.replace(" w3-show", "");
-  }
-}
+// ... (MyFunction definition) ...
 
 document.getElementById('loginForm').addEventListener('submit', function(event) {
   event.preventDefault(); 
-  
   const messageDiv = document.getElementById('loginMessage');
   
   messageDiv.className = 'w3-panel w3-green w3-round';
-  messageDiv.innerHTML = `✅ Login successful! Redirecting to **ADMIN PANEL**...`;
+  messageDiv.innerHTML = `✅ Login successful! Redirecting to **ADMIN CONTROL PANEL**...`;
   messageDiv.classList.remove('w3-hide');
 
-  // Redirect to the main functional page (index.html)
+  // CRITICAL FIX: Use location.replace to prevent back button issues and force redirect
   setTimeout(() => {
-    window.location.href = 'index.html'; 
-  }, 1000); 
+    window.location.replace('controlpanel.html'); 
+  }, 100); // Shorter delay for faster redirect
 });
 </script>
 
