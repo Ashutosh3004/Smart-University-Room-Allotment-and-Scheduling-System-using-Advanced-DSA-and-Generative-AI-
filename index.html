@@ -9,16 +9,60 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
+  /* Add this to the <style> section in index.html */
+.title-card {
+    background-color: rgba(255, 255, 255, 0.85); /* 85% Opaque White */
+    padding: 40px 60px;
+    border-radius: 15px;
+    display: inline-block; /* Makes the box fit the text size */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* Nice floating shadow */
+    backdrop-filter: blur(5px); /* Optional: Blur effect for modern look */
+    max-width: 800px;
+    margin-top: 80px;
+    border-bottom: 5px solid #cc0000; /* Professional red accent line */
+}
+
+/* Ensure text inside is dark and readable */
+.title-card h1 { color: #333; font-weight: 800; letter-spacing: 2px; }
+.title-card p { color: #555; font-weight: 600; }
   body {
-    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: "Lato", sans-serif;
+    /* Set the background image */
+    background-image: url('university.webp');
+    
+    /* Ensure it covers the full screen nicely */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
+    /* Fallback color */
     background-color: #f5f7fa;
+    color: #333;
   }
-  h1, h2, h3 {
-    font-weight: 600;
-    letter-spacing: 0.5px;
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 { font-family: "Lato", sans-serif; }
+  .w3-bar, h1, button { font-family: "Montserrat", sans-serif; }
+  
+  /* Add a semi-transparent white background to content sections for readability */
+  .content-overlay {
+      background-color: rgba(255, 255, 255, 0.92); /* 92% Opaque White */
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      margin-top: 20px;
   }
-body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
-.w3-bar,h1,button {font-family: "Montserrat", sans-serif}
+
+  /* Enhanced Header Text Shadow for readability over image */
+  header h1, header p {
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+  }
+  
+  /* Specific Card Style override for transparency */
+  .w3-card {
+      background-color: rgba(255, 255, 255, 0.95);
+  }
 </style>
 </head>
 <body>
@@ -29,7 +73,7 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
     <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-red" href="javascript:void(0);" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
     <a href="#" class="w3-bar-item w3-button w3-padding-large w3-white">Home</a>
     <a href="login.html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Login</a>
-    <a href="dashboard.html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Dashboard</a>
+    <a href="dashboard(faculty).html" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Dashboard</a>
   </div>
 
   <!-- Navbar on small screens -->
@@ -41,10 +85,18 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
 </div>
 
 <!-- Header -->
-<header class="w3-container w3-red w3-center" style="padding:128px 16px">
-  <h1 class="w3-margin w3-jumbo">SMART ROOM ALLOTMENT</h1>
-  <p class="w3-xlarge">University Classroom & Lab Scheduling System</p>
-  <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="location.href='login.html'">Get Started</button>
+<header class="w3-container w3-center" style="padding: 40px 16px;">
+  
+  <div class="title-card">
+      <h1 class="w3-margin w3-jumbo">SMART ROOM ALLOTMENT</h1>
+      <p class="w3-xlarge">University Classroom & Lab Scheduling System</p>
+      
+      <button class="w3-button w3-red w3-padding-large w3-large w3-margin-top w3-round-large w3-hover-black" 
+              onclick="location.href='login.html'">
+          Get Started <i class="fa fa-arrow-right"></i>
+      </button>
+  </div>
+
 </header>
 
 <!-- Feature Cards Section -->
